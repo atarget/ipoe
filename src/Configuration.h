@@ -20,6 +20,7 @@ public:
     const string &getControlInterface() const;
     const vector<string> &getInterfaces() const;
     const string &getBpf() const;
+    const string &getRealyIface() const;
     const string &getCacheFileName() const;
     int getCliPort() const;
     const string &getCliAddress() const;
@@ -61,6 +62,7 @@ private:
     string cacheFileName = "ipoe.cache";
     string cacheBind = "";
     int loglevel = 5;
+    string realy_iface = "bond.100";
 
     map<string, string> staticRoutes;
 
@@ -73,6 +75,8 @@ private:
     void config_BPF(const json *j);
     void config_log(const json *j);
     void config_skipProxyArp(const json *j);
+    void config_realy_iface(const json *j);
+    void processIpPart(string already, string part, vector<string> *vector);
 
     unordered_map<string, string> morphers;
     unordered_map<string, string> unmorphers;

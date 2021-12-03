@@ -39,7 +39,7 @@ void Storage::controlGwStart() {
     }
 }
 
-void Storage::addIPv4Clent(IPv4AddressInfo address) {
+void Storage::addIPv4Clent(IPv4AddressInfo address, string hwAddr, string realHwAddr) {
     /*
      * 1. Search session in sessions
      * 1.1 If not found create it
@@ -49,6 +49,7 @@ void Storage::addIPv4Clent(IPv4AddressInfo address) {
      * 5. set session in storage
      *
      */
+
     if (address.getAddress() == 0) return;
     ipv4staticRoutesMutex.lock();
     for (auto staticRoutesOfClient: ipv4StaticRoutes) {
@@ -74,13 +75,21 @@ void Storage::addIPv4Clent(IPv4AddressInfo address) {
     ipv4SessionsMutex.lock();
     if (ipv4Sessions.count(address.getAddress())) {
         session = ipv4Sessions[address.getAddress()];
-        if (session.getIf_index() != address.getIf_index()) {
+        if (session.getIf_index() != address.getIf_index() && address.getIf_index()) {
             if_index_changed = true;
         }
     }
     ipv4SessionsMutex.unlock();
-    session.setIf_index(address.getIf_index());
+    if (address.getIf_index()) {
+        if (session.getRealHwAddr() == "" || session.getRealHwAddr() == hwAddr) {
+            session.setIf_index(address.getIf_index());
+        }
+    }
     session.setDst_addr_v4(address.getAddress());
+    if (realHwAddr != "") {
+        session.setRealHwAddr(realHwAddr);
+    }
+    session.setHwAddr(hwAddr);
     bool masterFlagSaved = session.isMaster();
     if (isControlGateway(address.getAddress())) {
         IPv4AddressInfo gw = getControlGwFor(address.getAddress());
@@ -92,6 +101,7 @@ void Storage::addIPv4Clent(IPv4AddressInfo address) {
     ipv4SessionsMutex.lock();
     ipv4Sessions[address.getAddress()] = session;
     ipv4SessionsMutex.unlock();
+    if (session.getIf_index())
     if (masterFlagSaved != session.isMaster() || if_index_changed ) {
         pushSessionToRouterCommander(session);
         cacheSession(session);
@@ -536,6 +546,17 @@ bool Storage::isSessionMaster(in_addr_t addr) {
     if (ipv4Sessions.count(addr)) {
         return ipv4Sessions[addr].isMaster();
     }
+
+    for (auto routesMap: ipv4StaticRoutes) {
+        unordered_map<in_addr_t, StaticIPv4Route> routes = routesMap.second;
+        for (auto route: routes) {
+            if (route.second.isInNetwork(addr) &&
+                route.second.isInstalled()) {
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 

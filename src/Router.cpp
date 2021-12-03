@@ -16,8 +16,12 @@ void Router::processIPv4Session(SessionIPv4 session) {
      * 3. if master - add garp request
      */
      if (session.isMaster()) {
-         Log::debug("Session started " + session.to_string());
-         replaceRoute(session.getDst_addr_v4(), 32, session.getSrc_addr_v4(), 0, session.getIf_index());
+         if (session.getRealHwAddr() != "" && session.getRealHwAddr() != session.getHwAddr()) {
+             Log::debug("Session real hwAddr != realHwAddr skip action for " + session.to_string());
+         } else {
+             Log::debug("Session started " + session.to_string());
+             replaceRoute(session.getDst_addr_v4(), 32, session.getSrc_addr_v4(), 0, session.getIf_index());
+         }
      } else {
          Log::debug("Session stopped " + session.to_string());
          removeRoute(session.getDst_addr_v4(), 32, session.getIf_index());

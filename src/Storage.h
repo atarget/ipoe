@@ -39,7 +39,7 @@ public:
     void requeueAllSessions();
     void requeueAllStaticRoutes();
     /** call from Interface listener **/
-    void addIPv4Clent(IPv4AddressInfo address);
+    void addIPv4Clent(IPv4AddressInfo address, string hwAddr, string realHwAddr);
     void routeDeleted(StaticIPv4Route route);
     void routeAdded(StaticIPv4Route route);
     void addControlGateway(IPv4AddressInfo gateway);

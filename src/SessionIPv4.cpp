@@ -56,3 +56,19 @@ string SessionIPv4::dstAsString() {
 string SessionIPv4::srsAsString() {
     return Helper::ipv4ToString(src_addr_v4);
 }
+
+const string &SessionIPv4::getRealHwAddr() const {
+    return realHwAddrStr;
+}
+
+void SessionIPv4::setRealHwAddr(const string &hwAddrStr) {
+    SessionIPv4::realHwAddrStr = hwAddrStr;
+}
+
+const string &SessionIPv4::getHwAddr() const {
+    return hwAddr;
+}
+
+void SessionIPv4::setHwAddr(const string &hwAddr) {
+    SessionIPv4::hwAddr = hwAddr;
+}

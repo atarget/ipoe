@@ -21,12 +21,16 @@ private:
     Configuration *cfg;
 
     thread *snifferThread;
+    thread *snifferDHCPThread;
     uint32_t arp_socket;
     void snifferRoutine();
+    void snifferDHCPRoutine();
 
     HWAddress<6> iface_hw_addr;
+    bool callbackDHCP(const PDU &pdu);
     bool callback(const PDU &pdu);
     bool tryIpSession(const PDU &pdu);
+    bool tryDhcpSession(const PDU &pdu);
     void proxyArp(const ARP &arp);
     map<string, EthernetII> arpProxyMap;
     int globalProxyArpDDOSCounter;

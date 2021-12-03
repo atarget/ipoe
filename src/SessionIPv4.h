@@ -35,6 +35,17 @@ public:
     string dstAsString();
     string srsAsString();
 private:
+    string realHwAddrStr = "";
+    string hwAddr = "";
+public:
+    const string &getRealHwAddr() const;
+    void setRealHwAddr(const string &hwAddrStr);
+
+    const string &getHwAddr() const;
+
+    void setHwAddr(const string &hwAddr);
+
+private:
     in_addr_t dst_addr_v4;
     in_addr_t src_addr_v4;
     int if_index;

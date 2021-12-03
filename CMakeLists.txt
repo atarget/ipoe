@@ -3,7 +3,7 @@ project(authentificator)
 
 set(JSON_BuildTests OFF CACHE INTERNAL "")
 set(CMAKE_CXX_STANDARD 14)
-add_subdirectory(vendor/nlohmann_json)
+add_subdirectory(json)
 
 
 add_executable(ipoe main.cpp
@@ -16,7 +16,7 @@ add_executable(ipoe main.cpp
         src/Log.cpp src/Log.h src/StaticIPv4Route.cpp
         src/StaticIPv4Route.h src/IPv4AddressInfo.cpp
         src/IPv4AddressInfo.h src/Engine.cpp
-        src/Engine.h src/Helper.cpp src/Helper.h src/Router.cpp src/Router.h)
+        src/Engine.h src/Helper.cpp src/Helper.h src/Router.cpp src/Router.h src/DHCP.h)
 
 add_executable(fake_arp_flooder fake_arp_flooder.cpp )
 

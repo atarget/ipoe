@@ -6,6 +6,7 @@
 #include <vector>
 #include "Configuration.h"
 #include <fstream>
+#include <regex>
 #include "Log.h"
 #include "Helper.h"
 
@@ -24,8 +25,7 @@ Configuration::Configuration(const string &filename) {
     config_BPF(&j);
     config_InterfaceBinding(&j);
     config_skipProxyArp(&j);
-
-
+    config_realy_iface(&j);
 }
 
 char *Configuration::findArgument(char **startArgv, char **endArgv, const string &need) {
@@ -103,7 +103,29 @@ void Configuration::config_Interfaces(const json *j) {
     if (j->count("interfaces") == 0) {
         Log::emerg("config error: need interfaces");
     }
-    interfaces = (*j)["interfaces"].get<vector<string>>();
+    vector<string> m_interfaces = (*j)["interfaces"].get<vector<string>>();
+    for (auto iface: m_interfaces) {
+        regex  expr("([a-z0-9A-Z]+)\\.([0-9\\-]+)");
+        smatch m;
+        if (regex_search(iface, m, expr)) {
+                if (m.size() == 3) {
+                    string tmp = m[2];
+                    int p = 0;
+                    if ((p = tmp.find("-")) != string::npos) {
+                        string minVlan = tmp.substr(0, p);
+                        string maxVlan = tmp.substr(p+1);
+                        for (int i = std::stoi(minVlan); i <= std::stoi(maxVlan); i++) {
+                            const uint32_t if_index = Helper::if_indexFromName((string)m[1] + "." + std::to_string(i));
+                            if (if_index) {
+                                interfaces.push_back((string)m[1] + "." + std::to_string(i));
+                            }
+                        }
+                    } else {
+                        interfaces.push_back(iface);
+                    }
+                }
+        }
+    }
 }
 
 void Configuration::dumpConfig() {
@@ -148,6 +170,11 @@ void Configuration::config_StaticRoutes(const json *j) {
         staticRoutes[prefix] = via;
     }
 
+}
+
+void Configuration::config_realy_iface(const json *j) {
+    if (!j->count("relay_iface")) return;
+    realy_iface = (*j)["relay_iface"].get<string>();
 }
 
 void Configuration::config_BPF(const json *j) {
@@ -223,8 +250,80 @@ int Configuration::getLoglevel() const {
     return loglevel;
 }
 
+void Configuration::processIpPart(string already, string part, vector<string> *vector) {
+
+}
+
 void Configuration::config_skipProxyArp(const json *j) {
     if (!j->count("skipProxyArp")) return;
+    vector<string> ignore_raw = (*j)["skipProxyArp"].get<vector<string>>();
+    for (auto ip: ignore_raw) {
+        regex  expr("([0-9\\-]+)\\.([0-9\\-]+)\\.([0-9\\-]+)\\.([0-9\\-]+)");
+        smatch m;
+        if (regex_search(ip, m, expr)) {
+            if (m.size() == 5) {
+                string b0 = m[1];
+                int b0Min, b0Max, b0Div;
+                if ((b0Div = b0.find("-")) == string::npos) {
+                    b0Min = std::stoi(b0);
+                    b0Max = std::stoi(b0);
+                } else {
+                    b0Min = std::stoi(b0.substr(0, b0Div));
+                    b0Max = std::stoi(b0.substr(b0Div + 1));
+                }
+
+                string b1 = m[2];
+                int b1Min, b1Max, b1Div;
+                if ((b1Div = b1.find("-")) == string::npos) {
+                    b1Min = std::stoi(b1);
+                    b1Max = std::stoi(b1);
+                } else {
+                    b1Min = std::stoi(b1.substr(0, b1Div));
+                    b1Max = std::stoi(b1.substr(b1Div + 1));
+                }
+
+                string b2 = m[3];
+                int b2Min, b2Max, b2Div;
+                if ((b2Div = b2.find("-")) == string::npos) {
+                    b2Min = std::stoi(b2);
+                    b2Max = std::stoi(b2);
+                } else {
+                    b2Min = std::stoi(b2.substr(0, b2Div));
+                    b2Max = std::stoi(b2.substr(b2Div + 1));
+                }
+
+                string b3 = m[4];
+                int b3Min, b3Max, b3Div;
+                if ((b3Div = b3.find("-")) == string::npos) {
+                    b3Min = std::stoi(b3);
+                    b3Max = std::stoi(b3);
+                } else {
+                    b3Min = std::stoi(b3.substr(0, b3Div));
+                    b3Max = std::stoi(b3.substr(b3Div + 1));
+                }
+
+                for (int b0i = b0Min; b0i <= b0Max; b0i++) {
+                    for (int b1i = b1Min; b1i <= b1Max; b1i++) {
+                        for (int b2i = b2Min; b2i <= b2Max; b2i++) {
+                            for (int b3i = b3Min; b3i <= b3Max; b3i++) {
+                                skipProxyArp[Helper::ipv4FromString(
+                                        std::to_string(b0i) + "." +
+                                             std::to_string(b1i) + "." +
+                                             std::to_string(b2i) + "." +
+                                             std::to_string(b3i)
+                                             )] = Helper::ipv4FromString(std::to_string(b0i) + "." +
+                                                     std::to_string(b1i) + "." +
+                                                     std::to_string(b2i) + "." +
+                                                     std::to_string(b3i));
+                            }
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
     vector<string> ignore = (*j)["skipProxyArp"].get<vector<string>>();
 
     for (auto ip: ignore) {
@@ -234,6 +333,10 @@ void Configuration::config_skipProxyArp(const json *j) {
 
 map<uint32_t, uint32_t> &Configuration::getSkipProxyArp() {
     return skipProxyArp;
+}
+
+const string &Configuration::getRealyIface() const {
+    return realy_iface;
 }
 
 
